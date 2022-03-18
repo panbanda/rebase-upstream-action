@@ -6,12 +6,15 @@ branding:
   color: green
 
 inputs:
+  origin:
+    description: The upstream repo containing your upstream branch
+    required: false
   upstream:
     description: The name of the target branch you want to track
     required: true
     default: main
   force:
-    description: Overwrite the HEAD branch with force push
+    description: Overwrite the current branch with force push
     required: false
     default: false
 
@@ -19,9 +22,23 @@ runs:
   using: composite
   steps:
     - run: |
-        git config user.name github-actions
-        git config user.email github-actions@github.com
-        git rebase ${{ inputs.upstream }}
+        ORIGIN=${{ inputs.upstream }};
+        if [ -z $ORIGIN ]; then
+            echo ${{ github.token }} | gh auth login --with-token;
+            ORIGIN=$(gh api repos/:owner/:repo --jq .parent.full_name);
+            if [ -z $ORIGIN ]; then echo "Can't find origin" >&2 && exit 1; fi;
+        fi;
+        if [ ! $(echo $ORIGIN | egrep '^(http|git@)') ]; then
+            ORIGIN=https://github.com/$ORIGIN.git
+        fi;
+
+        git remote add origin $ORIGIN;
+        git fetch origin ${{ inputs.upstream }};
+
+        git config --local user.name github-actions
+        git config --local user.email github-actions@github.com
+
+        git rebase origin/${{ inputs.upstream }};
 
         if [ "${{ inputs.force }}" = "true" -a "$(git status | grep diverged)" ]; then
           git push --force-with-lease;
