@@ -1,0 +1,36 @@
+name: Rebase Upstream
+description: A simple tool to keep your branch updated with it's upstream counterpart
+author: panbanda
+branding:
+  icon: git-pull-request
+  color: green
+
+inputs:
+  branch:
+    description: The name of the branch you want to rebase
+    required: true
+  upstream:
+    description: The name of the target branch you want to track
+    required: true
+    default: main
+  force:
+    description: Overwrite the HEAD branch with force push
+    required: false
+    default: false
+
+runs:
+  using: composite
+  steps:
+    - run: |
+        set -ex;
+
+        UPSTREAM=${{ inputs.upstream }};
+        git checkout ${{ inputs.branch }};
+        git rebase ${{ inputs.upstream }};
+
+        if [ "${{ inputs.force }}" = "true" -a "$(git status | grep diverged)" ]; then
+          git push origin $(git branch --show-current) --force-with-lease;
+        else;
+          git push origin $(git branch --show-current);
+        fi;
+      shell: bash
