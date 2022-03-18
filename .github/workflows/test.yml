@@ -9,7 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: updated-branch
       - uses: ./
         with:
-          branch: updated-branch
           upstream: main

@@ -6,9 +6,6 @@ branding:
   color: green
 
 inputs:
-  branch:
-    description: The name of the branch you want to rebase
-    required: true
   upstream:
     description: The name of the target branch you want to track
     required: true
@@ -22,19 +19,13 @@ runs:
   using: composite
   steps:
     - run: |
-        set -ex;
-
-        echo ${{ github.token }} | gh auth login --with-token;
-        ORIGIN=$(gh api repos/:owner/:repo --jq .parent.full_name);
-        if [ -z $ORIGIN ]; then echo "Can't find origin" >&2 && exit 1; fi;
-
-        git remote add origin $ORIGIN;
-        git fetch origin ${{ inputs.branch }};
-        git rebase origin/${{ inputs.upstream }};
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git rebase ${{ inputs.upstream }}
 
         if [ "${{ inputs.force }}" = "true" -a "$(git status | grep diverged)" ]; then
-          git push origin $(git branch --show-current) --force-with-lease;
+          git push --force-with-lease;
         else
-          git push origin $(git branch --show-current)
+          git push
         fi;
       shell: bash
