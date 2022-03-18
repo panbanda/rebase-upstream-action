@@ -24,13 +24,17 @@ runs:
     - run: |
         set -ex;
 
-        UPSTREAM=${{ inputs.upstream }};
-        git checkout ${{ inputs.branch }};
-        git rebase ${{ inputs.upstream }};
+        echo ${{ github.token }} | gh auth login --with-token;
+        ORIGIN=$(gh api repos/:owner/:repo --jq .parent.full_name);
+        if [ -z $ORIGIN ]; then echo "Can't find origin" >&2 && exit 1; fi;
+
+        git remote add origin $ORIGIN;
+        git fetch origin ${{ inputs.branch }};
+        git rebase origin/${{ inputs.upstream }};
 
         if [ "${{ inputs.force }}" = "true" -a "$(git status | grep diverged)" ]; then
           git push origin $(git branch --show-current) --force-with-lease;
-        else;
-          git push origin $(git branch --show-current);
+        else
+          git push origin $(git branch --show-current)
         fi;
       shell: bash
